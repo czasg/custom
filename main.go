@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -48,11 +47,13 @@ func Custom(writer http.ResponseWriter, request *http.Request) {
 	if codeStr == "" {
 		codeStr = "200"
 	}
-	code, err := strconv.ParseInt(codeStr, 10, 0)
-	if err != nil {
-		return
+	code := 0
+	for i, j := 1, len(codeStr)-1; j >= 0; i, j = i*10, j-1 {
+		code += int(codeStr[j]-'0') * i
 	}
-	writer.WriteHeader(int(code))
+	if code >= 100 && code < 1000 {
+		writer.WriteHeader(code)
+	}
 	// body
 	bodyStr := query.Get("body")
 	if bodyStr != "" {
@@ -79,3 +80,9 @@ func main() {
 	fmt.Printf("list on port: %s\n", port)
 	_ = http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
 }
+
+/* todo
+1、是否能够监听 signal 以便优雅退出
+2、所有的 content-type
+3、head 的预处理
+*/
