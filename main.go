@@ -2,9 +2,18 @@ package main
 
 import (
 	"fmt"
+	"github.com/czasg/custom/types"
 	"net/http"
 	"os"
 	"strings"
+)
+
+var (
+	contentType                   = "content-type"
+	accessAllowControlHeaders     = "access-allow-control-headers"
+	accessAllowControlMethods     = "access-allow-control-methods"
+	accessAllowControlOrigin      = "access-allow-control-origin"
+	accessAllowControlCredentials = "access-allow-control-credentials"
 )
 
 func Always204(writer http.ResponseWriter, _ *http.Request) {
@@ -14,25 +23,17 @@ func Always204(writer http.ResponseWriter, _ *http.Request) {
 func Custom(writer http.ResponseWriter, request *http.Request) {
 	// method
 	if request.Method == http.MethodOptions {
-		writer.Header().Set("allow-method", "*")
+		writer.Header().Set(accessAllowControlHeaders, "*")
+		writer.Header().Set(accessAllowControlMethods, "*")
+		writer.Header().Set(accessAllowControlOrigin, "*")
+		writer.Header().Set(accessAllowControlCredentials, "true")
 	}
 	// query
 	query := request.URL.Query()
 	// type
-	typeStr := query.Get("type")
-	switch typeStr {
-	case "txt":
-		writer.Header().Set("content-type", "text/plain; charset=utf-8")
-	case "json":
-		writer.Header().Set("content-type", "application/json; charset=utf-8")
-	case "file":
-		writer.Header().Set("content-type", "")
-	case "zip":
-		writer.Header().Set("content-type", "")
-	case "jpg":
-	case "png":
-	case "css":
-	case "js":
+	typeStr := types.Types[query.Get("type")]
+	if typeStr != "" {
+		writer.Header().Set(contentType, typeStr)
 	}
 	// header
 	for _, header := range query["header"] {
@@ -78,11 +79,8 @@ func main() {
 		port = "8080"
 	}
 	fmt.Printf("list on port: %s\n", port)
-	_ = http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	if err != nil {
+		_ = fmt.Errorf("server close: %v", err)
+	}
 }
-
-/* todo
-1、是否能够监听 signal 以便优雅退出
-2、所有的 content-type
-3、head 的预处理
-*/
